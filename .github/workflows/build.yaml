@@ -2,7 +2,7 @@ name: Sonar Cloud Analysis
 on:
   push:
     branches:
-      - sonar
+      - sonar-no-examples
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
