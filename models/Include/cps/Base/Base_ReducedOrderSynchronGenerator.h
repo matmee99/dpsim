@@ -10,6 +10,8 @@
 
 #include <cps/SimPowerComp.h>
 #include <cps/Solver/MNAInterface.h>
+#include <cps/Signal/Exciter.h>
+#include <cps/Signal/TurbineGovernor.h>
 
 namespace CPS {
 namespace Base {
@@ -49,12 +51,12 @@ namespace Base {
 			/// (0,0) = Id
 			/// (1,0) = Iq
 			Matrix mIdq;
-			/// dq stator terminal voltage
+			/// dq0 stator terminal voltage
 			/// (0,0) = Vd
 			/// (1,0) = Vq
 			/// (2,0) = V0
 			Matrix mVdq0;
-			/// dq armature current
+			/// dq0 armature current
 			/// (0,0) = Id
 			/// (1,0) = Iq
 			/// (2,0) = I0
@@ -131,7 +133,9 @@ namespace Base {
 			Complex mInitCurrent;
 			/// angle of initial armature current
 			Real mInitCurrentAngle;
-			/// initial field voltage (p.u.)
+			/// induced emf by the field current under no-load conditions at time k (p.u.)
+			Real mEf_prev;
+			/// induced emf by the field current under no-load conditions at time k+1 (p.u.)
 			Real mEf;
 
 
@@ -149,6 +153,17 @@ namespace Base {
 
 			/// Flag to remember when initial values are set
 			Bool mInitialValuesSet = false;
+
+			// #### Controllers ####
+			/// Determines if Turbine and Governor are activated
+			Bool mHasTurbineGovernor = false;
+			/// Determines if Exciter is activated
+			Bool mHasExciter = false;
+			/// Signal component modelling governor control and steam turbine
+			std::shared_ptr<Signal::TurbineGovernor> mTurbineGovernor;
+			/// Signal component modelling voltage regulator and exciter
+			// std::shared_ptr<Signal::Exciter> mExciter;
+			std::shared_ptr<Signal::Exciter> mExciter;
 
 		public:
 			/// Destructor - does nothing.
@@ -173,6 +188,15 @@ namespace Base {
 			///
 			void setInitialValues(Complex initComplexElectricalPower, 
 				Real initMechanicalPower, Complex initTerminalVoltage);
+
+			/// Add governor and turbine
+			void addGovernor(Real Ta, Real Tb, Real Tc, Real Fa,
+				Real Fb, Real Fc, Real K, Real Tsr, Real Tsm, Real Tm_init, Real PmRef);
+			void addGovernor(std::shared_ptr<Signal::TurbineGovernor> turbineGovernor);
+			/// Add voltage regulator and exciter
+			void addExciter(Real Ta, Real Ka, Real Te, Real Ke, 
+				Real Tf, Real Kf, Real Tr);
+			void addExciter(std::shared_ptr<Signal::Exciter> exciter);
 
 			/// ### Setters ###
 			void reduceInertiaConstant(Real porcent) {mH = mH * (1.-porcent);}
