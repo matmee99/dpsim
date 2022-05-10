@@ -11,10 +11,12 @@ Examples::Grids::SMIB::ScenarioConfig3 GridParams;
 // Generator parameters
 Examples::Components::SynchronousGeneratorKundur::MachineParameters syngenKundur;
 
+// Excitation system
+Examples::Components::ExcitationSystemEremia::Parameters excitationEremia;
 
 void EMT_3ph_SynGen_Load(String simName, Real timeStep, Real finalTime, Real H,
 	Real startTimeFault, Real endTimeFault, Real logDownSampling, Real switchOpen,
-	Real switchClosed, int SGModel, Logger::Level logLevel) {
+	Real switchClosed, int SGModel, bool withExciter, Logger::Level logLevel) {
 
 	// ----- Dynamic simulation ------
 	String simNameEMT = simName;
@@ -47,6 +49,18 @@ void EMT_3ph_SynGen_Load(String simName, Real timeStep, Real finalTime, Real H,
     genEMT->setInitialValues(GridParams.initComplexElectricalPower, GridParams.mechPower, 
 							 GridParams.initTerminalVolt);
 
+	// Exciter
+	std::shared_ptr<Signal::Exciter> exciterEMT = nullptr;
+	if (withExciter) {
+		exciterEMT = Signal::Exciter::make("SynGen_Exciter", logLevel);
+		exciterEMT->setParameters(excitationEremia.Ta, excitationEremia.Ka, 
+								 excitationEremia.Te, excitationEremia.Ke, 
+								 excitationEremia.Tf, excitationEremia.Kf, 
+								 excitationEremia.Tr);
+		genEMT->addExciter(exciterEMT);
+	}
+
+	// Load
 	auto load = CPS::EMT::Ph3::RXLoad::make("Load", logLevel);
 	load->setParameters(Math::singlePhaseParameterToThreePhase(GridParams.initActivePower/3), 
 						Math::singlePhaseParameterToThreePhase(GridParams.initReactivePower/3),
@@ -86,12 +100,16 @@ void EMT_3ph_SynGen_Load(String simName, Real timeStep, Real finalTime, Real H,
 	loggerEMT->addAttribute("v_gen", 	genEMT->attribute("v_intf"));
 	loggerEMT->addAttribute("i_gen", 	genEMT->attribute("i_intf"));
     loggerEMT->addAttribute("Etorque", 	genEMT->attribute("Etorque"));
-    //loggerEMT->addAttribute("delta", 	genEMT->attribute("delta"));
-    //loggerEMT->addAttribute("w_r", 		genEMT->attribute("w_r"));
-	//loggerEMT->addAttribute("Vdq0", 	genEMT->attribute("Vdq0"));
-	//loggerEMT->addAttribute("Idq0", 	genEMT->attribute("Idq0"));
+    loggerEMT->addAttribute("delta", 	genEMT->attribute("delta"));
+    loggerEMT->addAttribute("w_r", 		genEMT->attribute("w_r"));
+	loggerEMT->addAttribute("Vdq0", 	genEMT->attribute("Vdq0"));
+	loggerEMT->addAttribute("Idq0", 	genEMT->attribute("Idq0"));
 	//loggerEMT->addAttribute("Edq0", 	genEMT->attribute("Edq0_t"));
 	//loggerEMT->addAttribute("Evbr", 	genEMT->attribute("Evbr"));
+	// Exciter
+	if (withExciter) {
+		loggerEMT->addAttribute("Vf", exciterEMT->attribute("Vf"));
+	}
 
 	Simulation simEMT(simNameEMT, logLevel);
 	simEMT.doInitFromNodesAndTerminals(true);
@@ -124,6 +142,7 @@ int main(int argc, char* argv[]) {
 	Real timeStep = 1e-3;
 	int SGModel = 4;
 	Real H = syngenKundur.H;
+	bool withExciter = false;
 	std::string SGModel_str = "4Order";
 	std::string stepSize_str = "";
 	std::string inertia_str = "";
@@ -152,6 +171,8 @@ int main(int argc, char* argv[]) {
 			H = args.getOptionReal("Inertia");
 			inertia_str = "_Inertia_" + std::to_string(H);
 		}
+		if (args.options.find("WITHEXCITER") != args.options.end())
+			withExciter = args.getOptionBool("WITHEXCITER");
 	}
 
 	Real logDownSampling;
@@ -162,5 +183,5 @@ int main(int argc, char* argv[]) {
 	Logger::Level logLevel = Logger::Level::off;
 	std::string simName ="EMT_SynGen" + SGModel_str + "VBR_Load_Fault" + stepSize_str + inertia_str;
 	EMT_3ph_SynGen_Load(simName, timeStep, finalTime, H, startTimeFault, endTimeFault, 
-						 logDownSampling, SwitchOpen, SwitchClosed, SGModel, logLevel);
+						 logDownSampling, SwitchOpen, SwitchClosed, SGModel, withExciter, logLevel);
 }
