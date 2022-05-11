@@ -100,25 +100,49 @@ std::shared_ptr<CPS::Task> MnaSolverEigenSparse<VarType>::createLogTask()
 
 template <typename VarType>
 void MnaSolverEigenSparse<VarType>::solve(Real time, Int timeStepCount) {
-	// Reset source vector
-	mRightSideVector.setZero();
+	bool iterate;
+	if 	(mSyncGen.size()==0) 
+		// if there is no syncGen components, then it is not necessary to iterate
+		iterate = false;
+	else 
+		iterate = true;
 
-	// Add together the right side vector (computed by the components'
-	// pre-step tasks)
-	for (auto stamp : mRightVectorStamps)
-		mRightSideVector += *stamp;
+	while (iterate) {
+		// Reset source vector
+		mRightSideVector.setZero();
 
-	if (!mIsInInitialization)
-		MnaSolver<VarType>::updateSwitchStatus();
+		if (!mIsInInitialization)
+			MnaSolver<VarType>::updateSwitchStatus();
+		
+		for (auto syncGen : mSyncGen)
+			syncGen->correctorStep();
 
-	if (mSwitchedMatrices.size() > 0)
-		mLeftSideVector = mLuFactorizations[mCurrentSwitchStatus][0]->solve(mRightSideVector);
+		// Add together the right side vector (computed by the components'
+		// pre-step tasks)
+		for (auto stamp : mRightVectorStamps)
+			mRightSideVector += *stamp;
 
+		if (mSwitchedMatrices.size() > 0)
+			mLeftSideVector = mLuFactorizations[mCurrentSwitchStatus][0]->solve(mRightSideVector);
+
+		for (auto syncGen : mSyncGen)
+			//update voltages
+			syncGen->updateVoltage(mLeftSideVector);
+
+		// check if there is sync generators that need iterate
+		int count=0; 
+		for (auto syncGen : mSyncGen) {
+			if (syncGen->checkVoltageDifference())
+				count = count+1;
+		}
+		if (count==0) 
+			iterate=false;
+	}
 
 	// TODO split into separate task? (dependent on x, updating all v attributes)
 	for (UInt nodeIdx = 0; nodeIdx < mNumNetNodes; ++nodeIdx)
 		mNodes[nodeIdx]->mnaUpdateVoltage(mLeftSideVector);
-
+	
 	// Components' states will be updated by the post-step tasks
 }
 

@@ -51,6 +51,7 @@ namespace DPsim {
 		using MnaSolver<VarType>::mLeftSideVectorHarm;
 		using MnaSolver<VarType>::mFrequencyParallel;
 		using MnaSolver<VarType>::mSLog;
+		using MnaSolver<VarType>::mSyncGen;
 
 
 		/// Sets all entries in the matrix with the given switch index to zero

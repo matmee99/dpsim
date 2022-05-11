@@ -161,6 +161,7 @@ void EMT_3ph_4OrderSynGenIter(String simName, Real timeStep, Real finalTime, Rea
 	simEMT.setTimeStep(timeStep);
 	simEMT.setFinalTime(finalTime);
 	simEMT.setDomain(Domain::EMT);
+	simEMT.setMnaSolverImplementation(DPsim::MnaSolverFactory::EigenSparse);
 	simEMT.addLogger(loggerEMT);
 
 	// Events
