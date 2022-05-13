@@ -82,7 +82,7 @@ void SP::Ph1::Transformer::initializeFromNodesAndTerminals(Real frequency) {
 	mNominalOmega = 2. * PI * frequency;
 	mReactance = mNominalOmega * mInductance;
 	mSLog->info("Reactance={} [Ohm] (referred to primary side)", mReactance);
-
+	
 	// Component parameters are referred to higher voltage side.
 	// Switch terminals to have terminal 0 at higher voltage side
 	// if transformer is connected the other way around.
@@ -217,11 +217,9 @@ void SP::Ph1::Transformer::calculatePerUnitParameters(Real baseApparentPower, Re
 
 	mBaseInductance = mBaseImpedance / mBaseOmega;
 	mInductancePerUnit = mInductance / mBaseInductance;
-	mMagnetizing = mMagnetizingReactance / mBaseImpedance;
 	// omega per unit=1, hence 1.0*mInductancePerUnit.
 	mLeakagePerUnit = Complex(mResistancePerUnit,1.*mInductancePerUnit);
-	mMagnetizingPerUnit = mMagnetizing / mBaseImpedance;
-	mSLog->info("Leakage Impedance Per Unit={} [Ohm] ", mLeakagePerUnit);
+	mSLog->info("Leakage Impedance={} [pu] ", mLeakagePerUnit);
 
     mRatioAbsPerUnit = mRatioAbs / mNominalVoltageEnd1 * mNominalVoltageEnd2;
     mSLog->info("Tap Ratio={} [pu]", mRatioAbsPerUnit);
@@ -241,18 +239,17 @@ void SP::Ph1::Transformer::pfApplyAdmittanceMatrixStamp(SparseMatrixCompRow & Y)
 	// calculate matrix stamp
 	mY_element = MatrixComp(2, 2);
 	Complex y = Complex(1, 0) / mLeakagePerUnit;
-	Complex ys = Complex(1, 0) / mMagnetizingPerUnit;
-	mY_element(0, 0) = (y + ys);
+
+	mY_element(0, 0) = y;
 	mY_element(0, 1) = -y*mRatioAbsPerUnit;
 	mY_element(1, 0) = -y*mRatioAbsPerUnit;
-	mY_element(1, 1) = (y + ys)*std::pow(mRatioAbsPerUnit, 2);
+	mY_element(1, 1) = y*std::pow(mRatioAbsPerUnit, 2);
 
 	//check for inf or nan
 	for (int i = 0; i < 2; i++)
 		for (int j = 0; j < 2; j++)
 			if (std::isinf(mY_element.coeff(i, j).real()) || std::isinf(mY_element.coeff(i, j).imag())) {
 				std::cout << mY_element << std::endl;
-				std::cout << "Zm:" << mMagnetizing << std::endl;
 				std::cout << "Zl:" << mLeakage << std::endl;
 				std::cout << "tap:" << mRatioAbsPerUnit << std::endl;
 				std::stringstream ss;
@@ -303,7 +300,7 @@ void SP::Ph1::Transformer::mnaInitialize(Real omega, Real timeStep, Attribute<Ma
 	updateMatrixNodeIndices();
 
 	mRightVector = Matrix::Zero(leftVector->get().rows(), 1);
-
+	
 	for (auto subcomp: mSubComponents)
 		if (auto mnasubcomp = std::dynamic_pointer_cast<MNAInterface>(subcomp))
 			mnasubcomp->mnaInitialize(omega, timeStep, leftVector);
@@ -367,7 +364,7 @@ void SP::Ph1::Transformer::mnaAddPreStepDependencies(AttributeBase::List &prevSt
 	modifiedAttributes.push_back(attribute("right_vector"));
 }
 
-void SP::Ph1::Transformer::mnaPreStep(Real time, Int timeStepCount) {
+void SP::Ph1::Transformer::mnaPreStep(Real time, Int timeStepCount) {	
 	// pre-step of subcomponents
 	for (auto subcomp: mSubComponents)
 		if (auto mnasubcomp = std::dynamic_pointer_cast<MNAInterface>(subcomp))
