@@ -18,8 +18,10 @@ namespace Examples {
 
 namespace Components {
 namespace SynchronousGeneratorKundur {
+    // P. Kundur, "Power System Stability and Control", Example 3.2, pp. 102
+    // and Example 3.5, pp. 134f.
     struct MachineParameters {
-        // Define machine parameters in per unit
+        // Thermal generating unit, 3600r/min, 2-pole
         Real nomPower = 555e6;
         Real nomVoltage = 24e3; // Phase-to-Phase RMS
         Real nomFreq = 60;
@@ -27,6 +29,7 @@ namespace SynchronousGeneratorKundur {
         Int poleNum = 2;
         Real H = 3.7;
 
+        // Define machine parameters in per unit
         // Fundamental parameters
         Real Rs = 0.003;
         Real Ll = 0.15;
@@ -125,8 +128,8 @@ namespace CIGREHVAmerican {
     };
 }
 
-// P. Kundur, "Power System Stability and Control", Example 13.2, pp. 864-869.
 namespace KundurExample1 {
+    // P. Kundur, "Power System Stability and Control", Example 13.2, pp. 864-869.
     struct Network {
         Real nomVoltage = 400e3;
     };
@@ -180,8 +183,177 @@ namespace SMIB {
         Real lineResistance = lineCIGREHV.lineResistancePerKm*lineLeng;
         Real lineInductance = lineCIGREHV.lineReactancePerKm/nomOmega*lineLeng;
         Real lineCapacitance = lineCIGREHV.lineSusceptancePerKm/nomOmega*lineLeng;
-        Real lineConductance =lineCIGREHV.lineConductancePerKm*lineLeng;;
+        Real lineConductance =lineCIGREHV.lineConductancePerKm*lineLeng;
     };
+
+    struct ScenarioConfig2 {
+        //Scenario used to validate reduced order SG VBR models against PSAT (in SP domain)
+
+        // General grid parameters
+        Real VnomMV = 24e3;
+        Real VnomHV = 230e3;
+        Real nomFreq = 60;
+        Real ratio = VnomMV/VnomHV;
+        Real nomOmega= nomFreq * 2 * PI;
+
+        // Generator parameters
+        Real setPointActivePower = 300e6;
+        Real setPointVoltage = 1.05*VnomMV;
+
+        // CIGREHVAmerican (230 kV)
+        Grids::CIGREHVAmerican::LineParameters lineCIGREHV;
+        Real lineLength = 100;
+        Real lineResistance = lineCIGREHV.lineResistancePerKm * lineLength * std::pow(ratio,2);
+        Real lineInductance = lineCIGREHV.lineReactancePerKm * lineLength * std::pow(ratio,2) / nomOmega;
+        Real lineCapacitance = lineCIGREHV.lineSusceptancePerKm * lineLength / std::pow(ratio,2) / nomOmega;
+        Real lineConductance = 1e-15;
+
+        // In PSAT SwitchClosed is equal to 1e-3 p.u.
+        Real SwitchClosed = 1e-3 * (24*24/555);
+	    Real SwitchOpen = 1e6;
+    };
+
+    struct ScenarioConfig3 {
+        //Scenario used to validate reduced order SG VBR models in the DP and EMT domain against the SP domain
+
+        // General grid parameters
+        Real VnomMV = 24e3;
+        Real nomFreq = 60;
+        Real nomOmega= nomFreq * 2 * PI;
+
+        //-----------Generator-----------//
+        Real setPointActivePower=300e6;
+        Real mechPower = 300e6;
+        Real initActivePower = 300e6;
+        Real initReactivePower = 0;
+        Real initVoltAngle = -PI / 2;
+        Complex initComplexElectricalPower = Complex(initActivePower, initReactivePower);
+        Complex initTerminalVolt = VnomMV * Complex(cos(initVoltAngle), sin(initVoltAngle));
+
+        // 
+        Real SwitchClosed = 0.1;
+	    Real SwitchOpen = 1e6;
+    };
+
+namespace ReducedOrderSynchronGenerator {
+namespace Scenario4 {
+    //Scenario used to compare DP against SP accuracy in Martin's thesis
+
+    struct Config {
+        // default configuration of scenario
+        // adjustable using applyCommandLineArgsOptions
+        String sgType = "4";
+        Real startTimeFault = 30.0;
+	    Real endTimeFault = 30.1;
+    };
+
+    struct GridParams {
+        // General grid parameters
+        Real VnomMV = 24e3;
+        Real VnomHV = 230e3;
+        Real nomFreq = 60;
+        Real ratio = VnomMV/VnomHV;
+        Real nomOmega= nomFreq * 2 * PI;
+
+        // Generator parameters
+        Real setPointActivePower = 300e6;
+        Real setPointVoltage = 1.05*VnomMV;
+
+        // CIGREHVAmerican (230 kV)
+        Grids::CIGREHVAmerican::LineParameters lineCIGREHV;
+        Real lineLength = 100;
+        Real lineResistance = lineCIGREHV.lineResistancePerKm * lineLength * std::pow(ratio,2);
+        Real lineInductance = lineCIGREHV.lineReactancePerKm * lineLength * std::pow(ratio,2) / nomOmega;
+        Real lineCapacitance = lineCIGREHV.lineSusceptancePerKm * lineLength / std::pow(ratio,2) / nomOmega;
+        Real lineConductance = 8e-2;
+
+        // In PSAT SwitchClosed is equal to 1e-3 p.u.
+        Real SwitchClosed = 0.1;
+	    Real SwitchOpen = 1e6;
+    };
+}
+
+namespace Scenario5 {
+    // SMIB scenario with RX trafo and load step as event
+    struct Config {
+        // default configuration of scenario
+        // adjustable using applyCommandLineArgsOptions
+        String sgType = "4";
+        Real startTimeFault = 1.0;
+	    Real endTimeFault = 1.1;
+    };
+
+    struct GridParams {
+
+        // General grid parameters
+        Real VnomMV = 24e3;
+        Real VnomHV = 230e3;
+        Real nomFreq = 60;
+        Real ratio = VnomMV/VnomHV;
+        Real nomOmega= nomFreq * 2 * PI;
+
+        // Generator parameters
+        Real setPointActivePower = 300e6;
+        Real setPointVoltage = 1.05*VnomMV;
+
+        // CIGREHVAmerican (230 kV)
+        Grids::CIGREHVAmerican::LineParameters lineCIGREHV;
+        Real lineLength = 100;
+        Real lineResistance = lineCIGREHV.lineResistancePerKm * lineLength;
+        Real lineInductance = lineCIGREHV.lineReactancePerKm * lineLength / nomOmega;
+        Real lineCapacitance = lineCIGREHV.lineSusceptancePerKm * lineLength / nomOmega;
+        Real lineConductance = 1.0491e-05; // Psnub 0.1% of 555MW
+
+        // Switch for load step
+        Real SwitchClosed = 529; // 100 MW load step
+	    Real SwitchOpen = 9.1840e+07; // corresponds to 1e6 Ohms at MV level of 24kV
+    };
+
+    struct Transf1 {
+	    Real nomVoltageHV = 230e3;
+        Real nomVoltageMV = 24e3;
+        Real transformerResistance = 0; // referred to HV side
+        Real transformerReactance = 5.2900; // referred to HV side
+        Real transformerNominalPower = 555e6;
+    };
+}
+
+namespace Scenario6 {
+    // SMIB scenario with ideal trafo and load step as event 
+
+    struct Config {
+        // default configuration of scenario
+        // adjustable using applyCommandLineArgsOptions
+        String sgType = "4";
+        Real loadStepEventTime = 10.0;
+    };
+
+    struct GridParams {
+        // General grid parameters
+        Real VnomMV = 24e3;
+        Real VnomHV = 230e3;
+        Real nomFreq = 60;
+        Real ratio = VnomMV/VnomHV;
+        Real nomOmega= nomFreq * 2 * PI;
+
+        // Generator parameters
+        Real setPointActivePower = 300e6;
+        Real setPointVoltage = 1.05*VnomMV;
+
+        // CIGREHVAmerican (230 kV)
+        Grids::CIGREHVAmerican::LineParameters lineCIGREHV;
+        Real lineLength = 100;
+        Real lineResistance = lineCIGREHV.lineResistancePerKm * lineLength * std::pow(ratio,2);
+        Real lineInductance = lineCIGREHV.lineReactancePerKm * lineLength * std::pow(ratio,2) / nomOmega;
+        Real lineCapacitance = lineCIGREHV.lineSusceptancePerKm * lineLength / std::pow(ratio,2) / nomOmega;
+        Real lineConductance = 0.0048; // Psnub 0.5% of 555MW
+
+        // Load step
+        Real loadStepActivePower = 100e6; 
+    };
+}
+
+}
 }
 
 namespace ThreeBus {
