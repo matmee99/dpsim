@@ -26,7 +26,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <Eigen/KLUSupport>
+#include <Eigen/NICSLUSupport>
 
 #ifdef __clang__
 #elif defined(__GNUC__)
@@ -88,10 +88,10 @@ namespace CPS {
 	///
 	typedef Eigen::SparseLU<SparseMatrix> LUFactorizedSparse;
 	///
+	typedef Eigen::NICSLU<Matrix> LUFactorizedNICSLU;
+	///
 	typedef Eigen::Matrix<Real, Eigen::Dynamic, 1> Vector;
 	///
-	typedef Eigen::KLU<SparseMatrix> LUFactorizedKLU;
-	
 	template<typename VarType>
 	using MatrixVar = Eigen::Matrix<VarType, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
 
@@ -105,7 +105,7 @@ namespace CPS {
 	enum class PhaseType { A, B, C, ABC, Single };
 	enum class Domain { SP, DP, EMT };
 	enum class PowerflowBusType { PV, PQ, VD, None };
-	enum class GeneratorType {PVNode, IdealVoltageSource, IdealCurrentSource, TransientStability, FullOrder, FullOrderVBR, None};
+	enum class GeneratorType {PVNode, IdealVoltageSource, IdealCurrentSource, TransientStability, FullOrder, FullOrderVBR, SG6aOrderVBR, SG6bOrderVBR, SG4OrderVBR, SG3OrderVBR, None};
 
 	// ### Exceptions ###
 	class Exception : public std::exception { };
