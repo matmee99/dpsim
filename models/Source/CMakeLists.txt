@@ -11,6 +11,7 @@ add_library(cps STATIC
 )
 
 list(APPEND CPS_SOURCES
+        Base/Base_ReducedOrderSynchronGenerator.cpp
 	Base/Base_SynchronGenerator.cpp
 	Base/Base_AvVoltageSourceInverterDQ.cpp
 	Base/Base_AvVoltageSourceInverterDQWithStateSpace.cpp
@@ -31,11 +32,11 @@ list(APPEND CPS_SOURCES
 	DP/DP_Ph1_Switch.cpp
 	DP/DP_Ph1_SynchronGeneratorIdeal.cpp
 	DP/DP_Ph1_SynchronGeneratorTrStab.cpp
-    DP/DP_Ph1_SynchronGeneratorVBR.cpp
-    DP/DP_Ph1_SynchronGenerator3OrderVBR.cpp
-    DP/DP_Ph1_SynchronGenerator4OrderVBR.cpp
-    DP/DP_Ph1_SynchronGenerator6aOrderVBR.cpp
-    DP/DP_Ph1_SynchronGenerator6bOrderVBR.cpp
+        DP/DP_Ph1_SynchronGeneratorVBR.cpp
+        DP/DP_Ph1_SynchronGenerator3OrderVBR.cpp
+        DP/DP_Ph1_SynchronGenerator4OrderVBR.cpp
+        DP/DP_Ph1_SynchronGenerator6aOrderVBR.cpp
+        DP/DP_Ph1_SynchronGenerator6bOrderVBR.cpp
 	DP/DP_Ph1_Inverter.cpp
 	DP/DP_Ph1_AvVoltageSourceInverterDQ.cpp
 	DP/DP_Ph1_NetworkInjection.cpp
